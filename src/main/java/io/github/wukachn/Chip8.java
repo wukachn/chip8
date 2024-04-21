@@ -11,6 +11,6 @@ public class Chip8 {
       return;
     }
     String romPath = args[0];
-    log.info(romPath);
+    Memory m = new Memory(romPath);
   }
 }
