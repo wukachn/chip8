@@ -31,11 +31,13 @@ public class Memory {
   private static byte[] MEMORY = new byte[MEMORY_SIZE];
 
   public Memory(String romPath) {
+    log.info("Initializing Memory.");
     loadFont();
     loadProgram(romPath);
   }
 
   private void loadProgram(String romPath) {
+    log.info("Loading Program.");
     try (FileInputStream fis = new FileInputStream(romPath)) {
       byte[] buffer = new byte[MEMORY_SIZE - PROGRAM_OFFSET];
       int bytesRead = fis.read(buffer);
@@ -49,6 +51,7 @@ public class Memory {
   }
 
   private void loadFont() {
+    log.info("Loading Font.");
     System.arraycopy(FONT, 0, MEMORY, FONT_OFFSET, FONT.length);
   }
 }

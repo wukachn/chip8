@@ -10,6 +10,7 @@ public class Chip8 {
       log.error("Please provide a single argument for the ROM path.");
       return;
     }
+    log.info("Starting Emulator.");
     String romPath = args[0];
     Memory m = new Memory(romPath);
   }
