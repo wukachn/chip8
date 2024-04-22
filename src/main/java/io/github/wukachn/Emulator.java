@@ -227,7 +227,9 @@ public class Emulator implements Closeable {
   }
 
   private void handle7XNN(short opcode) {
-    registers[getX(opcode)] += getNN(opcode); //TODO potential
+    short valX = registers[getX(opcode)];
+    short nn = getNN(opcode);
+    registers[getX(opcode)] = (byte) ((valX + nn) & 0xFF); //TODO potential
   }
 
   private void handle8XY0(short opcode) {
@@ -282,7 +284,7 @@ public class Emulator implements Closeable {
     }
     byte currentVXValue = registers[getX(opcode)];
     byte shiftedBit = (byte) (currentVXValue & 0x01);
-    registers[getX(opcode)] = (byte) (currentVXValue >> 1);
+    registers[getX(opcode)] = (byte) (((currentVXValue & 0xFF) >> 1) & 0xFF);
     registers[15] = shiftedBit;
   }
 
@@ -292,7 +294,7 @@ public class Emulator implements Closeable {
     }
     byte currentVXValue = registers[getX(opcode)];
     byte shiftedBit = (byte) ((currentVXValue >> 7) & 0x01);
-    registers[getX(opcode)] = (byte) (currentVXValue << 1);
+    registers[getX(opcode)] = (byte) ((currentVXValue << 1) & 0xFF);
     registers[15] = shiftedBit;
   }
 
