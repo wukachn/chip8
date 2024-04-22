@@ -7,27 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Memory {
 
-  private static final int FONT_OFFSET = 80;
   private static final int PROGRAM_OFFSET = 512;
   private static final int MEMORY_SIZE = 4096;
-  private static final byte[] FONT = {
-      (byte) 0xF0, (byte) 0x90, (byte) 0x90, (byte) 0x90, (byte) 0xF0, // 0
-      (byte) 0x20, (byte) 0x60, (byte) 0x20, (byte) 0x20, (byte) 0x70, // 1
-      (byte) 0xF0, (byte) 0x10, (byte) 0xF0, (byte) 0x80, (byte) 0xF0, // 2
-      (byte) 0xF0, (byte) 0x10, (byte) 0xF0, (byte) 0x10, (byte) 0xF0, // 3
-      (byte) 0x90, (byte) 0x90, (byte) 0xF0, (byte) 0x10, (byte) 0x10, // 4
-      (byte) 0xF0, (byte) 0x80, (byte) 0xF0, (byte) 0x10, (byte) 0xF0, // 5
-      (byte) 0xF0, (byte) 0x80, (byte) 0xF0, (byte) 0x90, (byte) 0xF0, // 6
-      (byte) 0xF0, (byte) 0x10, (byte) 0x20, (byte) 0x40, (byte) 0x40, // 7
-      (byte) 0xF0, (byte) 0x90, (byte) 0xF0, (byte) 0x90, (byte) 0xF0, // 8
-      (byte) 0xF0, (byte) 0x90, (byte) 0xF0, (byte) 0x10, (byte) 0xF0, // 9
-      (byte) 0xF0, (byte) 0x90, (byte) 0xF0, (byte) 0x90, (byte) 0x90, // A
-      (byte) 0xE0, (byte) 0x90, (byte) 0xE0, (byte) 0x90, (byte) 0xE0, // B
-      (byte) 0xF0, (byte) 0x80, (byte) 0x80, (byte) 0x80, (byte) 0xF0, // C
-      (byte) 0xE0, (byte) 0x90, (byte) 0x90, (byte) 0x90, (byte) 0xE0, // D
-      (byte) 0xF0, (byte) 0x80, (byte) 0xF0, (byte) 0x80, (byte) 0xF0, // E
-      (byte) 0xF0, (byte) 0x80, (byte) 0xF0, (byte) 0x80, (byte) 0x80  // F
-  };
   private static final byte[] MEMORY = new byte[MEMORY_SIZE];
   private int pc = PROGRAM_OFFSET;
 
@@ -43,11 +24,16 @@ public class Memory {
     return opcode;
   }
 
-
   public byte[] getBytes(int address, int n) {
     byte[] subArray = new byte[n];
     System.arraycopy(MEMORY, address, subArray, 0, n);
     return subArray;
+  }
+
+  public void setFromAddress(int address, byte[] bytes) {
+    for (short i = 0; i < bytes.length; i++) {
+      MEMORY[address + i] = bytes[i];
+    }
   }
 
   public int getPc() {
@@ -60,6 +46,10 @@ public class Memory {
 
   public void incrementPc() {
     this.pc += 2;
+  }
+
+  public void decrementPc() {
+    this.pc -= 2;
   }
 
   private void loadProgram(String romPath) {
@@ -78,6 +68,6 @@ public class Memory {
 
   private void loadFont() {
     log.info("Loading Font.");
-    System.arraycopy(FONT, 0, MEMORY, FONT_OFFSET, FONT.length);
+    System.arraycopy(Font.FONT, 0, MEMORY, Font.FONT_OFFSET, Font.FONT.length);
   }
 }
