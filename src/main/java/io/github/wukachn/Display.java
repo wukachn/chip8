@@ -39,7 +39,7 @@ public class Display extends JFrame implements KeyListener {
         if (!pixels[x][y]) {
           g.setColor(Color.BLACK);
         } else {
-          g.setColor(Color.WHITE);
+          g.setColor(Color.GREEN);
         }
         g.fillRect(x * SCALE, y * SCALE, SCALE, SCALE);
       }
