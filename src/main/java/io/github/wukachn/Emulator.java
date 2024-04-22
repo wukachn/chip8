@@ -229,7 +229,7 @@ public class Emulator implements Closeable {
   private void handle7XNN(short opcode) {
     short valX = registers[getX(opcode)];
     short nn = getNN(opcode);
-    registers[getX(opcode)] = (byte) ((valX + nn) & 0xFF); //TODO potential
+    registers[getX(opcode)] = (byte) ((valX + nn) & 0xFF);
   }
 
   private void handle8XY0(short opcode) {
