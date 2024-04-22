@@ -18,17 +18,21 @@ public class Emulator implements Closeable {
   private final Display display;
   private final Stack<Integer> stack;
   private final Keypad keypad;
+  private final Audio audio;
   private final byte[] registers = new byte[16];
   private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+  private Thread audioThread;
   private short indexRegister;
-  private char delayTimer;
-  private char soundTimer;
+  private byte delayTimer;
 
   public Emulator(String romPath) {
     this.memory = new Memory(romPath);
     this.stack = new Stack<>();
     this.keypad = new Keypad();
     this.display = new Display(keypad);
+    this.audio = new Audio();
+    audioThread = new Thread(audio);
+    audioThread.start();
   }
 
   public void runProgram() {
@@ -44,9 +48,7 @@ public class Emulator implements Closeable {
     if (delayTimer != 0) {
       delayTimer -= 1;
     }
-    if (soundTimer != 0) {
-      soundTimer -= 1;
-    }
+    audio.decrementTimer();
   }
 
   private void decodeAndExecute(short opcode) {
@@ -225,7 +227,7 @@ public class Emulator implements Closeable {
   }
 
   private void handle7XNN(short opcode) {
-    registers[getX(opcode)] += getNN(opcode);
+    registers[getX(opcode)] += getNN(opcode); //TODO potential
   }
 
   private void handle8XY0(short opcode) {
@@ -251,23 +253,27 @@ public class Emulator implements Closeable {
   }
 
   private void handle8XY4(short opcode) {
-    byte valX = registers[getX(opcode)];
-    byte valY = registers[getY(opcode)];
+    short valX = (short) (registers[getX(opcode)] & 0xFF);
+    short valY = (short) (registers[getY(opcode)] & 0xFF);
     short sum = (short) (valX + valY);
+    registers[getX(opcode)] = (byte) (sum & 0xFF);
     if (sum > 255) {
       registers[15] = 0x01;
+    } else {
+      registers[15] = 0x00;
     }
-    registers[getX(opcode)] = (byte) (sum & 0xFF);
   }
 
   private void handle8XY5(short opcode) {
-    byte valX = registers[getX(opcode)];
-    byte valY = registers[getY(opcode)];
-    if (valX > valY) {
-      registers[15] = 0x01;
-    }
+    short valX = (short) (registers[getX(opcode)] & 0xFF);
+    short valY = (short) (registers[getY(opcode)] & 0xFF);
     short result = (short) (valX - valY);
     registers[getX(opcode)] = (byte) (result & 0xFF);
+    if (valX >= valY) {
+      registers[15] = 0x01;
+    } else {
+      registers[15] = 0x00;
+    }
   }
 
   private void handle8XY6(short opcode) {
@@ -280,24 +286,26 @@ public class Emulator implements Closeable {
     registers[15] = shiftedBit;
   }
 
-  private void handle8XY7(short opcode) {
-    byte valX = registers[getX(opcode)];
-    byte valY = registers[getY(opcode)];
-    if (valX > valY) {
-      registers[15] = 0x00;
-    }
-    short result = (short) (valY - valX);
-    registers[getX(opcode)] = (byte) (result & 0xFF);
-  }
-
   private void handle8XYE(short opcode) {
     if (QuirkConfiguration.CPY_BEFORE_SHIFT) {
       registers[getX(opcode)] = registers[getY(opcode)];
     }
     byte currentVXValue = registers[getX(opcode)];
-    byte shiftedBit = (byte) (currentVXValue & 0x80);
+    byte shiftedBit = (byte) ((currentVXValue >> 7) & 0x01);
     registers[getX(opcode)] = (byte) (currentVXValue << 1);
     registers[15] = shiftedBit;
+  }
+
+  private void handle8XY7(short opcode) {
+    short valX = (short) (registers[getX(opcode)] & 0xFF);
+    short valY = (short) (registers[getY(opcode)] & 0xFF);
+    short result = (short) (valY - valX);
+    registers[getX(opcode)] = (byte) (result & 0xFF);
+    if (valY >= valX) {
+      registers[15] = 0x01;
+    } else {
+      registers[15] = 0x00;
+    }
   }
 
   private void handleANNN(short opcode) {
@@ -318,8 +326,9 @@ public class Emulator implements Closeable {
   }
 
   private void handleDXYN(short opcode) {
-    int X = registers[getX(opcode)] % 64; //TODO: Extract width and height into vars instead
-    int Y = registers[getY(opcode)] % 32;
+    int X =
+        (registers[getX(opcode)] & 0xFF) % 64; //TODO: Extract width and height into vars instead
+    int Y = (registers[getY(opcode)] & 0xFF) % 32;
     registers[15] = 0x00;
     int N = opcode & 0x000F;
     byte[] spriteBytes = memory.getBytes(indexRegister, N);
@@ -344,15 +353,15 @@ public class Emulator implements Closeable {
   }
 
   private void handleFX07(short opcode) {
-    registers[getX(opcode)] = (byte) delayTimer;
+    registers[getX(opcode)] = delayTimer;
   }
 
   private void handleFX15(short opcode) {
-    delayTimer = (char) registers[getX(opcode)];
+    delayTimer = registers[getX(opcode)];
   }
 
   private void handleFX18(short opcode) {
-    soundTimer = (char) registers[getX(opcode)];
+    audio.setTimer(registers[getX(opcode)]);
   }
 
   private void handleFX1E(short opcode) {
@@ -365,18 +374,18 @@ public class Emulator implements Closeable {
     if (optionalKey.isEmpty()) {
       memory.decrementPc();
     } else {
-      char keyIndex = optionalKey.get().charValue();
+      char keyIndex = optionalKey.get();
       registers[getX(opcode)] = (byte) keyIndex;
     }
   }
 
   private void handleFX29(short opcode) {
-    int valX = registers[getX(opcode)] * 6;
+    int valX = (registers[getX(opcode)] & 0xFF) * 6;
     indexRegister = (short) (Font.FONT_OFFSET + valX);
   }
 
   private void handleFX33(short opcode) {
-    short valX = registers[getX(opcode)];
+    short valX = (short) (registers[getX(opcode)] & 0xFF);
     byte[] bytes = new byte[3];
     bytes[0] = (byte) (valX / 100);
     bytes[1] = (byte) ((valX % 100) / 10);
