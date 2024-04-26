@@ -21,7 +21,6 @@ public class Emulator implements Closeable {
   private final Audio audio;
   private final byte[] registers = new byte[16];
   private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-  private Thread audioThread;
   private short indexRegister;
   private byte delayTimer;
 
@@ -31,8 +30,6 @@ public class Emulator implements Closeable {
     this.keypad = new Keypad();
     this.display = new Display(keypad);
     this.audio = new Audio();
-    audioThread = new Thread(audio);
-    audioThread.start();
   }
 
   public void runProgram() {
@@ -227,7 +224,7 @@ public class Emulator implements Closeable {
   }
 
   private void handle7XNN(short opcode) {
-    short valX = registers[getX(opcode)];
+    byte valX = registers[getX(opcode)];
     short nn = getNN(opcode);
     registers[getX(opcode)] = (byte) ((valX + nn) & 0xFF);
   }
