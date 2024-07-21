@@ -9,7 +9,7 @@ CHIP-8 is a simple, interpreted programming language that was developed in the 1
 1. `mvn clean compile assembly:single`
 2. `java -jar target/chip8-1.0-SNAPSHOT-jar-with-dependencies.jar <ROM-PATH>`
 
-With there being various CHIP-8 implementations out there, there is not a single true specification. This means that not all ROMs can be expected to run without further __qiurk__ configuartion. A handful of publically available ROMs can be found in the `roms` directory, so that you can play around with the project.
+With there being various CHIP-8 implementations out there, there is not a single true specification. This means that not all ROMs can be expected to run without further __quirk__ configuration. A couple of publicly available ROMs can be found in the `roms` directory, so that you can play around with the project.
 
 ## Controls
 
